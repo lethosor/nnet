@@ -53,39 +53,35 @@ function handleMouseEvent (evt, data) {
     }
 }
 
-function main (i1, i2, hidden, create) {
+function main (i1, i2, hidden_layers, hidden_neurons, create) {
     stage.removeAllChildren();
     var err = new createjs.Text("", "20px Arial", "red");
     var width = $('#default-canvas').width();
     var height = $('#default-canvas').height();
     err.x = 10; err.y = 10;
     stage.addChild(err);
-    if (isNaN(i1) || isNaN(i2) || isNaN(hidden)) {
+    if (isNaN(i1) || isNaN(i2) || isNaN(hidden_layers) || isNaN(hidden_neurons)) {
         err.text = "Invalid input";
         stage.update();
         return;
     }
     var dims = [2, 2];
-    for (var i = 0; i < hidden; i++)
-        dims.splice(1, 0, 3);
+    for (var i = 0; i < hidden_layers; i++)
+        dims.splice(1, 0, hidden_neurons);
     if (create) {
         net = new nnet.Network(dims);
     }
     net.setActivationCoefficient($('#acoeff').val());
-    for (var i = 0; i < net.layers.length; i++) {
-        var layer = net.layers[i];
-        for (var j = 0; j < layer.neurons.length; j++) {
-            var neuron = layer.neurons[j];
-            var x = (width / net.layers.length) * (i + 0.5);
-            var y = (height / layer.neurons.length) * (j + 0.5);
-            var r = 30;
-            var data = {neuron: neuron, x: x, y: y, r: r}
-            neuron.circle = new Circle(x, y, r, 'black');
-            neuron.circle.addTo(stage);
-            neuron.circle.shape.on('mouseover', handleMouseEvent, null, false, data);
-            neuron.circle.shape.on('mouseout', handleMouseEvent, null, false, data);
-        }
-    }
+    net.iter(function(lid, nid, layer, neuron) {
+        var x = (width / net.layers.length) * (lid + 0.5);
+        var y = (height / layer.neurons.length) * (nid + 0.5);
+        var r = 30;
+        var data = {neuron: neuron, x: x, y: y, r: r}
+        neuron.circle = new Circle(x, y, r, 'black');
+        neuron.circle.addTo(stage);
+        neuron.circle.shape.on('mouseover', handleMouseEvent, null, false, data);
+        neuron.circle.shape.on('mouseout', handleMouseEvent, null, false, data);
+    })
     net.calculate([i1, i2]);
     stage.update();
     for (var i = 0; i < net.layers.length; i++) {
@@ -107,8 +103,13 @@ $(function() {
     $('button#run, button#create').click(function() {
         main(parseFloat($('#input1').val()),
             parseFloat($('#input2').val()),
-            Math.max(1, Math.min(3, parseFloat($('#num-hidden').val()))),
+            Math.max(1, Math.min(3, parseFloat($('#num-hidden-layers').val()))),
+            Math.max(1, Math.min(5, parseFloat($('#num-hidden-neurons').val()))),
             $(this).attr('id') == 'create'
         );
     });
+    $('input[type=text]').on('keydown', function (evt) {
+        if (evt.which == 13)
+            $('button#run').click();
+    })
 })

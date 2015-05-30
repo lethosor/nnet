@@ -18,24 +18,36 @@ nnet = (function() {
         }
     }
 
-    function Neuron (num_inputs, network) {
+    function Neuron (num_inputs, network, is_input) {
         var self = this;
-        self.bias = Math.random();
-        self.weights = [];
-        iter(num_inputs, function (i) {
-            self.weights[i] = Math.random();
-        });
+        if (is_input) {
+            self.weights = [1];
+            self.bias = 0;
+        }
+        else {
+            self.bias = Math.random();
+            self.weights = [];
+            iter(num_inputs, function (i) {
+                self.weights[i] = Math.random() * 2 - 1;
+            });
+        }
         self.calculate = function (inputs) {
             if (inputs.length != num_inputs)
                 throw new Error('Expected ' + num_inputs + ' inputs, got ' + inputs.length);
-            var activation = 0;
-            iter(inputs, function (i, val) {
-                activation += val * self.weights[i];
-            })
-            activation -= self.bias;
-            self.activation = activation;
             self.inputs = inputs;
-            self.output = network.calcOutput(activation);
+            if (is_input) {
+                self.activation = 0;
+                self.output = inputs[0];
+            }
+            else {
+                var activation = 0;
+                iter(inputs, function (i, val) {
+                    activation += val * self.weights[i];
+                })
+                activation -= self.bias;
+                self.activation = activation;
+                self.output = network.calcOutput(activation);
+            }
             return self.output;
         };
     }
@@ -46,7 +58,7 @@ nnet = (function() {
         self.is_input = !!opts.input;
         self.is_output = !!opts.output;
         iter(count, function(i) {
-            self.neurons[i] = new Neuron(num_inputs, network);
+            self.neurons[i] = new Neuron(num_inputs, network, self.is_input);
         });
         self.calculate = function (inputs) {
             self.outputs = [];
@@ -97,6 +109,14 @@ nnet = (function() {
 
         self.calcOutput = function (activation) {
             return 1 / (1 + Math.exp(-activation / self.activationCoefficient));
+        }
+
+        self.iter = function (callback) {
+            for (var layer = 0; layer < self.layers.length; layer++) {
+                for (var n = 0; n < self.layers[layer].neurons.length; n++) {
+                    callback(layer, n, self.layers[layer], self.layers[layer].neurons[n]);
+                }
+            }
         }
     }
 
