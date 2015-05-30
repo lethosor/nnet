@@ -7,8 +7,13 @@ div.content {
     width: 100%;
 }
 
+div.center-column {
+    width: 800px;
+    margin: 0px auto;
+}
+
 canvas {
     box-shadow: 0px 0px 5px black;
     display: block;
-    margin: 0px auto;
+    margin-bottom: 1em;
 }

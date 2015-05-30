@@ -2,5 +2,18 @@
 layout: site
 id: basic
 ---
-<canvas width="800" height="400">
-</canvas>
+<div class="center-column">
+    <canvas width="800" height="400" id="default-canvas">
+    </canvas>
+    <form>
+        <div class="form-group">
+            <label>Input 1: <input type="text" class="form-control" id="input1" value="0.4"></label>
+            <label>Input 2: <input type="text" class="form-control" id="input2" value="0.6"></label>
+            <label># Hidden layers: <input type="text" class="form-control" id="num-hidden" value="1"></label>
+            <button type="button" class="btn btn-default" id="run">Run</button>
+        </div>
+        <div class="form-group">
+            <label>p: <input type="text" class="form-control" id="acoeff" value="1"></label>
+        </div>
+    </form>
+</div>
