@@ -33,6 +33,7 @@ nnet = (function() {
                 activation += val * self.weights[i];
             })
             activation -= self.bias;
+            self.activation = activation;
             self.inputs = inputs;
             self.output = network.calcOutput(activation);
             return self.output;
@@ -71,9 +72,12 @@ nnet = (function() {
         var self = this;
         opts = opts || {};
         self.layers = [];
-        self.activationCoefficient = parseFloat(opts.activationCoefficient);
-        if (isNaN(self.activationCoefficient))
-            self.activationCoefficient = 1;
+        self.setActivationCoefficient = function (n) {
+            self.activationCoefficient = parseFloat(n);
+            if (isNaN(self.activationCoefficient))
+                self.activationCoefficient = 1;
+        }
+        self.setActivationCoefficient(opts.activationCoefficient);
         iter(dims, function(i, count) {
             self.layers[i] = new Layer(count, (i == 0) ? 1 : dims[i - 1], {
                 input: i == 0,

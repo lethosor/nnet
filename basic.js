@@ -44,6 +44,7 @@ function handleMouseEvent (evt, data) {
             text += Math.roundTo(neuron.inputs[i], 5) + ' * ' + Math.roundTo(neuron.weights[i], 5) + '\n';
         }
         text += 'Bias: ' + Math.roundTo(neuron.bias, 5) + '\n';
+        text += 'Activation: ' + Math.roundTo(neuron.activation, 5) + '\n';
         text += 'Output: ' + Math.roundTo(neuron.output, 5) + '\n';
         tt.text(text);
     }
@@ -52,9 +53,8 @@ function handleMouseEvent (evt, data) {
     }
 }
 
-function main (i1, i2, hidden) {
-    var stage = new createjs.Stage("default-canvas");
-    stage.enableMouseOver();
+function main (i1, i2, hidden, create) {
+    stage.removeAllChildren();
     var err = new createjs.Text("", "20px Arial", "red");
     var width = $('#default-canvas').width();
     var height = $('#default-canvas').height();
@@ -68,9 +68,10 @@ function main (i1, i2, hidden) {
     var dims = [2, 2];
     for (var i = 0; i < hidden; i++)
         dims.splice(1, 0, 3);
-    net = new nnet.Network(dims, {
-        activationCoefficient: $('#acoeff').val()
-    });
+    if (create) {
+        net = new nnet.Network(dims);
+    }
+    net.setActivationCoefficient($('#acoeff').val());
     for (var i = 0; i < net.layers.length; i++) {
         var layer = net.layers[i];
         for (var j = 0; j < layer.neurons.length; j++) {
@@ -99,11 +100,15 @@ function main (i1, i2, hidden) {
 }
 
 $(function() {
+    net = new nnet.Network([2, 3, 2]);
+    stage = new createjs.Stage("default-canvas");
+    stage.enableMouseOver();
     $('.ctooltip').hide();
-    $('button#run').click(function() {
+    $('button#run, button#create').click(function() {
         main(parseFloat($('#input1').val()),
             parseFloat($('#input2').val()),
-            Math.max(1, Math.min(3, parseFloat($('#num-hidden').val())))
+            Math.max(1, Math.min(3, parseFloat($('#num-hidden').val()))),
+            $(this).attr('id') == 'create'
         );
     });
 })
