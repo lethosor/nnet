@@ -8,6 +8,7 @@ function num2color (n) {
 function Circle (x, y, r, fill) {
     this.x = x; this.y = y; this.r = r;
     var s = new createjs.Shape();
+    this.shape = s;
     var _stage;
     s.x = x;
     s.y = y;
@@ -28,8 +29,32 @@ function Circle (x, y, r, fill) {
     }
 }
 
+function handleMouseEvent (evt, data) {
+    if (evt.type == 'mouseover') {
+        var neuron = data.neuron;
+        var tt = $('.ctooltip').show().css({
+            whiteSpace: 'pre',
+            position: 'absolute',
+            zIndex: 2,
+            top: $('#default-canvas').offset().top + data.y + data.r,
+            left: $('#default-canvas').offset().left + data.x + data.r,
+        });
+        var text = 'Inputs: \n';
+        for (var i = 0; i < neuron.inputs.length; i++) {
+            text += Math.roundTo(neuron.inputs[i], 5) + ' * ' + Math.roundTo(neuron.weights[i], 5) + '\n';
+        }
+        text += 'Bias: ' + Math.roundTo(neuron.bias, 5) + '\n';
+        text += 'Output: ' + Math.roundTo(neuron.output, 5) + '\n';
+        tt.text(text);
+    }
+    else {
+        $('.ctooltip').hide();
+    }
+}
+
 function main (i1, i2, hidden) {
     var stage = new createjs.Stage("default-canvas");
+    stage.enableMouseOver();
     var err = new createjs.Text("", "20px Arial", "red");
     var width = $('#default-canvas').width();
     var height = $('#default-canvas').height();
@@ -50,13 +75,14 @@ function main (i1, i2, hidden) {
         var layer = net.layers[i];
         for (var j = 0; j < layer.neurons.length; j++) {
             var neuron = layer.neurons[j];
-            neuron.circle = new Circle(
-                (width / net.layers.length) * (i + 0.5),
-                (height / layer.neurons.length) * (j + 0.5),
-                30,
-                'red'
-            );
+            var x = (width / net.layers.length) * (i + 0.5);
+            var y = (height / layer.neurons.length) * (j + 0.5);
+            var r = 30;
+            var data = {neuron: neuron, x: x, y: y, r: r}
+            neuron.circle = new Circle(x, y, r, 'black');
             neuron.circle.addTo(stage);
+            neuron.circle.shape.on('mouseover', handleMouseEvent, null, false, data);
+            neuron.circle.shape.on('mouseout', handleMouseEvent, null, false, data);
         }
     }
     net.calculate([i1, i2]);
@@ -73,6 +99,7 @@ function main (i1, i2, hidden) {
 }
 
 $(function() {
+    $('.ctooltip').hide();
     $('button#run').click(function() {
         main(parseFloat($('#input1').val()),
             parseFloat($('#input2').val()),

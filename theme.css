@@ -17,3 +17,9 @@ canvas {
     display: block;
     margin-bottom: 1em;
 }
+
+div.ctooltip {
+    background: white;
+    box-shadow: 0px 0px 5px #aaa;
+    padding: 0.5em;
+}

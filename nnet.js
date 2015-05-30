@@ -1,3 +1,7 @@
+Math.roundTo = function (n, decimals) {
+    return Math.round(n * Math.pow(10, decimals)) /  Math.pow(10, decimals);
+}
+
 nnet = (function() {
     function Break() {};
     function iter (obj, cb) {
@@ -29,6 +33,7 @@ nnet = (function() {
                 activation += val * self.weights[i];
             })
             activation -= self.bias;
+            self.inputs = inputs;
             self.output = network.calcOutput(activation);
             return self.output;
         };
