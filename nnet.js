@@ -105,6 +105,7 @@ nnet = (function() {
             for (var i = 1; i < self.layers.length; i++) {
                 self.layers[i].calculate(self.layers[i - 1].outputs);
             }
+            return self.layers[self.layers.length - 1].outputs;
         }
 
         self.calcOutput = function (activation) {

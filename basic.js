@@ -75,15 +75,15 @@ function main (i1, i2, hidden_layers, hidden_neurons, create) {
     net.iter(function(lid, nid, layer, neuron) {
         var x = (width / net.layers.length) * (lid + 0.5);
         var y = (height / layer.neurons.length) * (nid + 0.5);
-        var r = 30;
+        var r = Math.min(30, height / layer.neurons.length / 2);
         var data = {neuron: neuron, x: x, y: y, r: r}
         neuron.circle = new Circle(x, y, r, 'black');
         neuron.circle.addTo(stage);
         neuron.circle.shape.on('mouseover', handleMouseEvent, null, false, data);
         neuron.circle.shape.on('mouseout', handleMouseEvent, null, false, data);
-    })
-    net.calculate([i1, i2]);
+    });
     stage.update();
+    net.calculate([i1, i2]);
     for (var i = 0; i < net.layers.length; i++) {
         var layer = net.layers[i];
         for (var j = 0; j < layer.neurons.length; j++) {
@@ -91,6 +91,18 @@ function main (i1, i2, hidden_layers, hidden_neurons, create) {
             neuron.circle.setFill(num2color(neuron.output));
         }
     }
+    var shape = new createjs.Shape();
+    net.iter(function(lid, nid, layer, neuron) {
+        if (!layer.is_output) {
+            for (var i = 0; i < net.layers[lid + 1].neurons.length; i++) {
+                var next = net.layers[lid + 1].neurons[i];
+                shape.graphics.beginStroke(num2color(neuron.output))
+                    .moveTo(neuron.circle.x, neuron.circle.y)
+                    .lineTo(next.circle.x, next.circle.y);
+            }
+        }
+    });
+    stage.addChildAt(shape, 0);
     stage.update();
     return;
 }
@@ -104,7 +116,7 @@ $(function() {
         main(parseFloat($('#input1').val()),
             parseFloat($('#input2').val()),
             Math.max(1, Math.min(3, parseFloat($('#num-hidden-layers').val()))),
-            Math.max(1, Math.min(5, parseFloat($('#num-hidden-neurons').val()))),
+            Math.max(1, Math.min(10, parseFloat($('#num-hidden-neurons').val()))),
             $(this).attr('id') == 'create'
         );
     });
