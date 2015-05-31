@@ -53,6 +53,56 @@ function handleMouseEvent (evt, data) {
     }
 }
 
+function makeDialogInput(value) {
+    return $('<div>').addClass('row').append(
+        $('<span>').addClass('col-sm-12').append(
+            $('<input type="text">').addClass("form-control").val(value)
+        )
+    );
+}
+
+function createDialog (neuron) {
+    if (neuron.is_input)
+        return;
+    var contents = $('<div>');
+    contents.append(
+        $('<h3>').text('Weights:')
+    );
+    $.each(neuron.weights, function (i, weight) {
+        contents.append(makeDialogInput(weight));
+    })
+    contents.append(
+        $('<h3>').text('Bias:')
+    ).append(makeDialogInput(neuron.bias));
+    BootstrapDialog.show({
+        title: 'Edit',
+        message: contents,
+        buttons: [
+            {
+                label: 'Cancel',
+                action: function (self) {
+                    self.close()
+                }
+            },
+            {
+                label: 'Save',
+                action: function (self) {
+                    contents.find('input[type=text]').each(function (i, e) {
+                        var value = parseFloat($(e).val());
+                        if (!isNaN(value)) {
+                            if (i < neuron.weights.length)
+                                neuron.weights[i] = value;
+                            else
+                                neuron.bias = value;
+                        }
+                    });
+                    self.close();
+                }
+            }
+        ]
+    });
+}
+
 function main (i1, i2, hidden_layers, hidden_neurons, create) {
     stage.removeAllChildren();
     var err = new createjs.Text("", "20px Arial", "red");
@@ -81,6 +131,9 @@ function main (i1, i2, hidden_layers, hidden_neurons, create) {
         neuron.circle.addTo(stage);
         neuron.circle.shape.on('mouseover', handleMouseEvent, null, false, data);
         neuron.circle.shape.on('mouseout', handleMouseEvent, null, false, data);
+        neuron.circle.shape.on('click', function (evt, data) {
+            createDialog(data.neuron);
+        }, null, false, data);
     });
     stage.update();
     net.calculate([i1, i2]);
@@ -120,8 +173,9 @@ $(function() {
             $(this).attr('id') == 'create'
         );
     });
+    $('button#run').click();
     $('input[type=text]').on('keydown', function (evt) {
         if (evt.which == 13)
             $('button#run').click();
-    })
+    });
 })

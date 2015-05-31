@@ -20,6 +20,7 @@ nnet = (function() {
 
     function Neuron (num_inputs, network, is_input) {
         var self = this;
+        self.is_input = is_input;
         if (is_input) {
             self.weights = [1];
             self.bias = 0;
