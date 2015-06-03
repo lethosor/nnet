@@ -1,11 +1,11 @@
-function function num2color (n) {
+function num2color (n) {
     if (n <= 0.5)
         return createjs.Graphics.getRGB(255, Math.floor(255 * n * 2), 0);
     else
         return createjs.Graphics.getRGB(Math.floor(255 * 2 * (1 - n)), 255, 0);
 }
 
-handleMouseEvent (evt, data) {
+function handleMouseEvent (evt, data) {
     if (evt.type == 'mouseover') {
         var neuron = data.neuron;
         var tt = $('.ctooltip').show().css({

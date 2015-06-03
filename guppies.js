@@ -136,8 +136,8 @@ function World (opts) {
         self.stage.update();
     }
 
-    self.setMaxSpeed = function (speed) {
-        opts.max_speed = toFloat(speed);
+    self.setOpts = function (new_opts) {
+        opts = $.extend(opts, new_opts);
     }
 
     self.newgen = function() {
@@ -162,8 +162,12 @@ function World (opts) {
                 continue;
             var g = new Guppy(opts.hidden_layer_size);
             g.net.iter(function(lid, nid, layer, neuron) {
-                for (var i = 0; i < neuron.weights.length; i++)
+                for (var i = 0; i < neuron.weights.length; i++) {
                     neuron.weights[i] = parents[randInt(0, 1)].net.layers[lid].neurons[nid].weights[i];
+                    if (Math.random() * 100 < opts.mutation_rate)
+                        neuron.weights[i] += ([-1, 1])[randInt(0, 1)] * Math.pow(Math.random(), 4);
+                    neuron.weights[i] = Math.max(-1, Math.min(1, neuron.weights[i]));
+                }
             });
             self.setupGuppy(g);
             self.guppies.push(g);
@@ -182,6 +186,7 @@ $(function() {
         var opts = {
             guppies: toFloat($('#num-guppies').val()),
             max_speed: toFloat($('#max-speed').val()),
+            mutation_rate: toFloat($('#mutation-rate').val()),
             hidden_layer_size: toFloat($('#hidden-layer-size').val()),
             canvas: $('#default-canvas'),
             well: $('.well').first(),
@@ -229,7 +234,17 @@ $(function() {
     $('.well').hide().css({'max-height': 300, 'overflow': 'auto'});
     $('input#max-speed').on('keydown keyup', function() {
         try {
-            world.setMaxSpeed($(this).val());
+            world.setOpts({
+                max_speed: toFloat($(this).val())
+            });
+        }
+        catch (e) {}
+    });
+    $('input#mutation-rate').on('keydown keyup', function() {
+        try {
+            world.setOpts({
+                mutation_rate: toFloat($(this).val())
+            });
         }
         catch (e) {}
     });
