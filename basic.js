@@ -17,11 +17,11 @@ handleMouseEvent (evt, data) {
         });
         var text = 'Inputs: \n';
         for (var i = 0; i < neuron.inputs.length; i++) {
-            text += Math.roundTo(neuron.inputs[i], 5) + ' * ' + Math.roundTo(neuron.weights[i], 5) + '\n';
+            text += roundTo(neuron.inputs[i], 5) + ' * ' + roundTo(neuron.weights[i], 5) + '\n';
         }
-        text += 'Bias: ' + Math.roundTo(neuron.bias, 5) + '\n';
-        text += 'Activation: ' + Math.roundTo(neuron.activation, 5) + '\n';
-        text += 'Output: ' + Math.roundTo(neuron.output, 5) + '\n';
+        text += 'Bias: ' + roundTo(neuron.bias, 5) + '\n';
+        text += 'Activation: ' + roundTo(neuron.activation, 5) + '\n';
+        text += 'Output: ' + roundTo(neuron.output, 5) + '\n';
         tt.text(text);
     }
     else {

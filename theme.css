@@ -27,3 +27,7 @@ div.ctooltip {
 div.row {
     margin-bottom: 5px;
 }
+
+.ws-pre {
+    white-space: pre;
+}

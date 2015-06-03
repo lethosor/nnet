@@ -12,17 +12,20 @@ function num2color (n) {
 
 function Guppy (hidden_layer_size) {
     var self = this;
+    self.events = $({});
     self.points = 0;
+    self.selected = false;
     self.net = new nnet.Network([2, hidden_layer_size, 2]);
     self.shape = new createjs.Shape();
-    self.setColor = function() {
-        console.log('setColor', self.points, 'Color: ', num2color(self.points / 15));
-        self.shape.graphics.clear().beginFill(num2color(self.points / 15)).beginStroke('black').drawCircle(0, 0, 10);
+    self.updateColor = function() {
+        self.shape.graphics.clear().beginFill(num2color(self.points / 15))
+            .beginStroke(self.selected ? 'red' : 'black').drawCircle(0, 0, 10);
     }
-    self.setColor();
+    self.updateColor();
     self.levelUp = function() {
         self.points++;
-        self.setColor();
+        self.updateColor();
+        self.events.trigger('levelUp');
     }
 }
 
@@ -34,18 +37,33 @@ function World (opts) {
     var cwidth = opts.canvas.width();
     var cheight = opts.canvas.height();
     self.stage = new createjs.Stage(opts.canvas[0]);
-    self.stage.clear();
-    self.stage.removeAllChildren();
 
-    self.start = function() {
-        if (running)
-            return;
+    self.isRunning = function() { return running; }
+    self.init = function() {
+        self.stage.clear();
+        self.stage.removeAllChildren();
+        self.food = new createjs.Shape();
+        self.food.graphics.beginFill('orange').drawCircle(0, 0, 5);
+        self.newFoodPos();
+        self.stage.addChild(self.food);
         iter(opts.guppies, function (i) {
             var g = new Guppy(opts.hidden_layer_size);
             g.shape.set({x: cwidth / 2, y: cheight / 2});
-            self.stage.addChild(g.shape)
+            self.stage.addChild(g.shape);
             self.guppies[i] = g;
+            g.shape.on('click', function(evt, guppy) {
+                self.cur_guppy = guppy;
+                opts.well.show();
+                self.updateDetails();
+            }, null, false, g);
+            g.events.on('levelUp', self.updateDetails);
         });
+    }
+    self.start = function() {
+        if (running)
+            return;
+        if (self.guppies.length != opts.guppies)
+            self.init();
         running = true;
         timeout_id = setInterval(self.tick, 50);
     }
@@ -62,6 +80,7 @@ function World (opts) {
         });
     }
 
+    self.food_count = 0;
     self.tick = function() {
         if (!running) {
             self.stop();
@@ -71,6 +90,7 @@ function World (opts) {
         iter(self.guppies, function (i, guppy) {
             if (!food_found && distance(guppy.shape.x, guppy.shape.y, self.food.x, self.food.y) < 15) {
                 food_found = true;
+                self.food_count++;
                 guppy.levelUp();
                 self.newFoodPos();
             }
@@ -84,10 +104,34 @@ function World (opts) {
         self.stage.update();
     }
 
-    self.food = new createjs.Shape();
-    self.food.graphics.beginFill('orange').drawCircle(0, 0, 5);
-    self.newFoodPos();
-    self.stage.addChild(self.food);
+    self.updateDetails = function () {
+        iter(self.guppies, function (i, guppy) {
+            guppy.selected = (guppy == self.cur_guppy);
+            guppy.updateColor();
+        })
+        var guppy = self.cur_guppy;
+        if (!guppy || !opts.well.is(':visible'))
+            return;
+        var contents = 'Points: ' + guppy.points + '/' + self.food_count;
+        if (self.food_count)
+            contents += ' (' + Math.floor(guppy.points / self.food_count * 100) + '%)';
+        contents += '\n';
+        contents += '<b>Weights:</b>\n';
+        guppy.net.iter(function(lid, nid, layer, neuron) {
+            if (lid == 1)
+                contents += nid + ' = ' + neuron.weights.map(function(n) { return roundTo(n, 5); }).join(', ') + '\n';
+        });
+        guppy.selected = true;
+        opts.well.html(contents).show();
+        $('<a>').addClass('btn btn-sm btn-warning pull-right').text('Dismiss').prependTo(opts.well).click(function() {
+            opts.well.hide();
+            guppy.selected = false;
+            guppy.updateColor();
+            self.cur_guppy = null;
+            self.stage.update();
+        });
+        self.stage.update();
+    }
 }
 
 $(function() {
@@ -97,16 +141,27 @@ $(function() {
             max_speed: toFloat($('#max-speed').val()),
             hidden_layer_size: toFloat($('#hidden-layer-size').val()),
             canvas: $('#default-canvas'),
+            well: $('.well').first(),
         };
         if (!world)
             world = new World(opts);
-        world.start();
-        $('a#run, a#stop').toggle();
-    });
-    $('a#stop').click(function() {
-        if (world)
+        if (!world.isRunning()) {
+            world.start();
+            $(this).text('Pause');
+        }
+        else {
             world.stop();
+            $(this).text('Run');
+        }
+    });
+    $('a#reset').click(function() {
+        if (world) {
+            if (world.isRunning())
+                $('a#run').click();
+            world.stage.clear();
+            world.stage.removeAllChildren();
+        }
         world = null;
-        $('a#run, a#stop').toggle();
-    }).hide();
+    });
+    $('.well').hide().css({'max-height': 300, 'overflow': 'auto'});
 });

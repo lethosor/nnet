@@ -1,7 +1,3 @@
-Math.roundTo = function (n, decimals) {
-    return Math.round(n * Math.pow(10, decimals)) /  Math.pow(10, decimals);
-}
-
 nnet = (function() {
     function Neuron (num_inputs, network, is_input) {
         var self = this;

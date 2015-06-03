@@ -17,6 +17,10 @@ function randInt (a, b) {
     return Math.floor(Math.random() * (b - a + 1)) + a;
 }
 
+function roundTo (n, decimals) {
+    return Math.round(n * Math.pow(10, decimals)) /  Math.pow(10, decimals);
+}
+
 function distance (x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
