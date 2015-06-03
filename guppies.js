@@ -48,16 +48,19 @@ function World (opts) {
         self.stage.addChild(self.food);
         iter(opts.guppies, function (i) {
             var g = new Guppy(opts.hidden_layer_size);
-            g.shape.set({x: cwidth / 2, y: cheight / 2});
-            self.stage.addChild(g.shape);
+            self.setupGuppy(g);
             self.guppies[i] = g;
-            g.shape.on('click', function(evt, guppy) {
-                self.cur_guppy = guppy;
-                opts.well.show();
-                self.updateDetails();
-            }, null, false, g);
-            g.events.on('levelUp', self.updateDetails);
         });
+    }
+    self.setupGuppy = function (g) {
+        g.shape.set({x: cwidth / 2, y: cheight / 2});
+        self.stage.addChild(g.shape);
+        g.shape.on('click', function(evt, guppy) {
+            self.cur_guppy = guppy;
+            opts.well.show();
+            self.updateDetails();
+        }, null, false, g);
+        g.events.on('levelUp', self.updateDetails);
     }
     self.start = function() {
         if (running)
@@ -132,6 +135,46 @@ function World (opts) {
         });
         self.stage.update();
     }
+
+    self.setMaxSpeed = function (speed) {
+        opts.max_speed = toFloat(speed);
+    }
+
+    self.newgen = function() {
+        var new_guppies = self.guppies.sort(function (a, b) {
+            return b.points - a.points;
+        }).filter(function (g) {
+            return g.points;
+        }).slice(0, 8);
+        if (new_guppies.length < 2)
+            throw new Error('Not enough intelligent guppies to evolve');
+        self.guppies = new_guppies;
+        self.food_count = 0;
+        self.stage.clear();
+        self.stage.removeAllChildren();
+        self.stage.addChild(self.food);
+        while (self.guppies.length < opts.guppies) {
+            var parents = [
+                self.guppies[randInt(0, self.guppies.length - 1)],
+                self.guppies[randInt(0, self.guppies.length - 1)]
+            ]
+            if (parents[0] == parents[1])
+                continue;
+            var g = new Guppy(opts.hidden_layer_size);
+            g.net.iter(function(lid, nid, layer, neuron) {
+                for (var i = 0; i < neuron.weights.length; i++)
+                    neuron.weights[i] = parents[randInt(0, 1)].net.layers[lid].neurons[nid].weights[i];
+            });
+            self.setupGuppy(g);
+            self.guppies.push(g);
+        }
+        iter(self.guppies, function (i, g) {
+            g.points = 0;
+            g.updateColor();
+            g.shape.set({x: cwidth / 2, y: cheight / 2});
+            self.stage.addChild(g.shape);
+        });
+    }
 }
 
 $(function() {
@@ -163,5 +206,31 @@ $(function() {
         }
         world = null;
     });
+    $('a#newgen').click(function() {
+        if (world) {
+            try {
+                world.newgen();
+            }
+            catch (e) {
+                BootstrapDialog.show({
+                    type: BootstrapDialog.TYPE_DANGER,
+                    title: 'Error',
+                    message: e,
+                    buttons: [{
+                        label: "Close",
+                        action: function (dialog) {
+                            dialog.close();
+                        }
+                    }],
+                });
+            }
+        }
+    });
     $('.well').hide().css({'max-height': 300, 'overflow': 'auto'});
+    $('input#max-speed').on('keydown keyup', function() {
+        try {
+            world.setMaxSpeed($(this).val());
+        }
+        catch (e) {}
+    });
 });

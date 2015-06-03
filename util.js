@@ -40,6 +40,9 @@ function iter (obj, cb) {
     }
 }
 
+function cloneArray (arr) {
+    return [].slice.apply(arr);
+}
 
 function Circle (x, y, r, fill) {
     this.x = x; this.y = y; this.r = r;
