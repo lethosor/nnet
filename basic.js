@@ -1,35 +1,11 @@
-function num2color (n) {
+function function num2color (n) {
     if (n <= 0.5)
         return createjs.Graphics.getRGB(255, Math.floor(255 * n * 2), 0);
     else
         return createjs.Graphics.getRGB(Math.floor(255 * 2 * (1 - n)), 255, 0);
 }
 
-function Circle (x, y, r, fill) {
-    this.x = x; this.y = y; this.r = r;
-    var s = new createjs.Shape();
-    this.shape = s;
-    var _stage;
-    s.x = x;
-    s.y = y;
-    this.setFill = function (color) {
-        s.graphics.clear();
-        s.graphics.setStrokeStyle(1);
-        s.graphics.beginStroke('#555');
-        s.graphics.beginFill(color);
-        s.graphics.drawCircle(0, 0, r);
-        if (_stage)
-            _stage.update();
-    }
-    if (fill)
-        this.setFill(fill);
-    this.addTo = function (stage) {
-        stage.addChild(s);
-        _stage = stage;
-    }
-}
-
-function handleMouseEvent (evt, data) {
+handleMouseEvent (evt, data) {
     if (evt.type == 'mouseover') {
         var neuron = data.neuron;
         var tt = $('.ctooltip').show().css({

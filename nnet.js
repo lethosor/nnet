@@ -3,21 +3,6 @@ Math.roundTo = function (n, decimals) {
 }
 
 nnet = (function() {
-    function Break() {};
-    function iter (obj, cb) {
-        var max = obj.length || obj;
-        for (var i = 0; i < max; i++) {
-            try {
-                cb(i, obj[i]);
-            }
-            catch (e) {
-                if (!(e instanceof Break))
-                    throw e;
-                break;
-            }
-        }
-    }
-
     function Neuron (num_inputs, network, is_input) {
         var self = this;
         self.is_input = is_input;
