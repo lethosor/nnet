@@ -34,6 +34,7 @@ function World (opts) {
     var running = false;
     self.guppies = [];
     var timeout_id = 0;
+    var ticks = 0;
     var cwidth = opts.canvas.width();
     var cheight = opts.canvas.height();
     self.stage = new createjs.Stage(opts.canvas[0]);
@@ -88,6 +89,14 @@ function World (opts) {
         if (!running) {
             self.stop();
             return;
+        }
+        if (++ticks % opts.generation_ticks == 0) {
+            try {
+                self.newgen();
+                ticks = 0;
+                return;
+            }
+            catch (e) {}
         }
         food_found = false;
         iter(self.guppies, function (i, guppy) {
@@ -163,9 +172,9 @@ function World (opts) {
             var g = new Guppy(opts.hidden_layer_size);
             g.net.iter(function(lid, nid, layer, neuron) {
                 for (var i = 0; i < neuron.weights.length; i++) {
-                    neuron.weights[i] = parents[randInt(0, 1)].net.layers[lid].neurons[nid].weights[i];
+                    neuron.weights[i] = parents[randInt(0, 1)].net.layers[lid].neurons[nid].weights[i] || 0;
                     if (Math.random() * 100 < opts.mutation_rate)
-                        neuron.weights[i] += ([-1, 1])[randInt(0, 1)] * Math.pow(Math.random(), 4);
+                        neuron.weights[i] += ([-1, 1])[randInt(0, 1)] * Math.pow(Math.random(), 5);
                     neuron.weights[i] = Math.max(-1, Math.min(1, neuron.weights[i]));
                 }
             });
@@ -190,9 +199,12 @@ $(function() {
             hidden_layer_size: toFloat($('#hidden-layer-size').val()),
             canvas: $('#default-canvas'),
             well: $('.well').first(),
+            generation_ticks: toInt($('#gen-ticks').val()),
         };
         if (!world)
             world = new World(opts);
+        else
+            world.setOpts(opts);
         if (!world.isRunning()) {
             world.start();
             $(this).text('Pause');
