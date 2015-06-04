@@ -31,3 +31,7 @@ div.row {
 .ws-pre {
     white-space: pre;
 }
+
+span.game-info {
+    margin: 0 0.5em;
+}

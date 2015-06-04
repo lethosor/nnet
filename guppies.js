@@ -14,12 +14,25 @@ function Guppy (hidden_layer_size) {
     var self = this;
     self.events = $({});
     self.points = 0;
+    self.age = 0;
     self.selected = false;
     self.net = new nnet.Network([2, hidden_layer_size, 2]);
     self.shape = new createjs.Shape();
+    self.getStrokeColor = function() {
+        if (self.selected)
+            return 'red';
+        else if (self.age >= 3)
+            return '#070';
+        else if (self.age == 2)
+            return '#077';
+        else if (self.age == 1)
+            return '#007';
+        else
+            return '#000';
+    }
     self.updateColor = function() {
         self.shape.graphics.clear().beginFill(num2color(self.points / 15))
-            .beginStroke(self.selected ? 'red' : 'black').drawCircle(0, 0, 10);
+            .beginStroke(self.getStrokeColor()).drawCircle(0, 0, 10);
     }
     self.updateColor();
     self.levelUp = function() {
@@ -33,6 +46,7 @@ function World (opts) {
     var self = this;
     var running = false;
     self.guppies = [];
+    var gen_id = 1;
     var timeout_id = 0;
     var ticks = 0;
     var cwidth = opts.canvas.width();
@@ -40,22 +54,35 @@ function World (opts) {
     self.stage = new createjs.Stage(opts.canvas[0]);
 
     self.isRunning = function() { return running; }
+    self.getGeneration = function() { return gen_id; }
     self.init = function() {
-        self.stage.clear();
-        self.stage.removeAllChildren();
         self.food = new createjs.Shape();
         self.food.graphics.beginFill('orange').drawCircle(0, 0, 5);
         self.newFoodPos();
-        self.stage.addChild(self.food);
+        self.reinitStage();
         iter(opts.guppies, function (i) {
             var g = new Guppy(opts.hidden_layer_size);
             self.setupGuppy(g);
             self.guppies[i] = g;
         });
     }
+    self.destroy = function() {
+        self.clearStage();
+        opts.timer.text('');
+        opts.food_counter.text('');
+        opts.generation_counter.text('');
+    }
+    self.clearStage = function() {
+        self.stage.clear();
+        self.stage.removeAllChildren();
+    }
+    self.reinitStage = function() {
+        self.clearStage();
+        self.stage.addChild(self.food);
+    }
     self.setupGuppy = function (g) {
         g.shape.set({x: cwidth / 2, y: cheight / 2});
-        self.stage.addChild(g.shape);
+        self.stage.addChildAt(g.shape, 0);
         g.shape.on('click', function(evt, guppy) {
             self.cur_guppy = guppy;
             opts.well.show();
@@ -90,15 +117,18 @@ function World (opts) {
             self.stop();
             return;
         }
-        if (++ticks % opts.generation_ticks == 0) {
+        ticks++;
+        opts.generation_counter.text('Generation ' + gen_id);
+        opts.timer.text('Ticks: ' + ticks);
+        opts.food_counter.text('Food: ' + self.food_count);
+        if (ticks % opts.generation_ticks == 0) {
             try {
                 self.newgen();
-                ticks = 0;
                 return;
             }
             catch (e) {}
         }
-        food_found = false;
+        var food_found = false;
         iter(self.guppies, function (i, guppy) {
             if (!food_found && distance(guppy.shape.x, guppy.shape.y, self.food.x, self.food.y) < 15) {
                 food_found = true;
@@ -128,6 +158,7 @@ function World (opts) {
         if (self.food_count)
             contents += ' (' + Math.floor(guppy.points / self.food_count * 100) + '%)';
         contents += '\n';
+        contents += 'Age: ' + guppy.age + '\n';
         contents += '<b>Weights:</b>\n';
         guppy.net.iter(function(lid, nid, layer, neuron) {
             if (lid == 1)
@@ -135,13 +166,18 @@ function World (opts) {
         });
         guppy.selected = true;
         opts.well.html(contents).show();
-        $('<a>').addClass('btn btn-sm btn-warning pull-right').text('Dismiss').prependTo(opts.well).click(function() {
-            opts.well.hide();
-            guppy.selected = false;
-            guppy.updateColor();
+        $('<a>').addClass('btn btn-sm btn-warning pull-right').text('Dismiss')
+            .prependTo(opts.well).click(self.clearSelection);
+        self.stage.update();
+    }
+
+    self.clearSelection = function() {
+        opts.well.hide();
+        if (self.cur_guppy) {
+            self.cur_guppy.selected = false;
+            self.cur_guppy.updateColor();
             self.cur_guppy = null;
-            self.stage.update();
-        });
+        }
         self.stage.update();
     }
 
@@ -158,10 +194,11 @@ function World (opts) {
         if (new_guppies.length < 2)
             throw new Error('Not enough intelligent guppies to evolve');
         self.guppies = new_guppies;
+        new_guppies.map(function(g) {
+            g.age++;
+        });
         self.food_count = 0;
-        self.stage.clear();
-        self.stage.removeAllChildren();
-        self.stage.addChild(self.food);
+        self.reinitStage();
         while (self.guppies.length < opts.guppies) {
             var parents = [
                 self.guppies[randInt(0, self.guppies.length - 1)],
@@ -187,6 +224,14 @@ function World (opts) {
             g.shape.set({x: cwidth / 2, y: cheight / 2});
             self.stage.addChild(g.shape);
         });
+        gen_id++;
+        ticks = 0;
+        if (self.cur_guppy) {
+            if (self.guppies.indexOf(self.cur_guppy) == -1)
+                self.clearSelection();
+            else
+                self.updateDetails();
+        }
     }
 }
 
@@ -200,6 +245,9 @@ $(function() {
             canvas: $('#default-canvas'),
             well: $('.well').first(),
             generation_ticks: toInt($('#gen-ticks').val()),
+            timer: $('#timer'),
+            food_counter: $('#food-count'),
+            generation_counter: $('#generation-id'),
         };
         if (!world)
             world = new World(opts);
@@ -218,8 +266,7 @@ $(function() {
         if (world) {
             if (world.isRunning())
                 $('a#run').click();
-            world.stage.clear();
-            world.stage.removeAllChildren();
+            world.destroy();
         }
         world = null;
     });
