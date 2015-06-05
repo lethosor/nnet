@@ -49,6 +49,7 @@ function World (opts) {
     var gen_id = 1;
     var timeout_id = 0;
     var ticks = 0;
+    self.tick_delay = 50;
     var cwidth = opts.canvas.width();
     var cheight = opts.canvas.height();
     self.stage = new createjs.Stage(opts.canvas[0]);
@@ -96,7 +97,7 @@ function World (opts) {
         if (self.guppies.length != opts.guppies)
             self.init();
         running = true;
-        timeout_id = setInterval(self.tick, 50);
+        self.tick();
     }
 
     self.stop = function () {
@@ -118,6 +119,7 @@ function World (opts) {
             return;
         }
         ticks++;
+        timeout_id = setTimeout(self.tick, self.tick_delay);
         opts.generation_counter.text('Generation ' + gen_id);
         opts.timer.text('Ticks: ' + ticks);
         opts.food_counter.text('Food: ' + self.food_count);
@@ -190,7 +192,7 @@ function World (opts) {
             return b.points - a.points;
         }).filter(function (g) {
             return g.points;
-        }).slice(0, 8);
+        }).slice(0, Math.max(2, opts.guppies / 2));
         if (new_guppies.length < 2)
             throw new Error('Not enough intelligent guppies to evolve');
         self.guppies = new_guppies;
@@ -288,6 +290,14 @@ $(function() {
                     }],
                 });
             }
+        }
+    });
+    $('a#warp').click(function() {
+        if (world) {
+            if (!$(this).hasClass('active'))
+                world.tick_delay = 1;
+            else
+                world.tick_delay = 50;
         }
     });
     $('.well').hide().css({'max-height': 300, 'overflow': 'auto'});
