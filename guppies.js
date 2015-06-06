@@ -10,13 +10,15 @@ function num2color (n) {
         return createjs.Graphics.getRGB(0, Math.floor(210 * 3 * (1 - n) + 45), 0);
 }
 
-function Guppy (hidden_layer_size) {
+function Guppy (hidden_layers, hidden_layer_size) {
     var self = this;
     self.events = $({});
     self.points = 0;
     self.age = 0;
     self.selected = false;
-    self.net = new nnet.Network([2, hidden_layer_size, 2]);
+    var dims = [2, 2];
+    iter(hidden_layers, function() { dims.splice(1, 0, hidden_layer_size); });
+    self.net = new nnet.Network(dims);
     self.shape = new createjs.Shape();
     self.getStrokeColor = function() {
         if (self.selected)
@@ -62,7 +64,7 @@ function World (opts) {
         self.newFoodPos();
         self.reinitStage();
         iter(opts.guppies, function (i) {
-            var g = new Guppy(opts.hidden_layer_size);
+            var g = new Guppy(opts.hidden_layers, opts.hidden_layer_size);
             self.setupGuppy(g);
             self.guppies[i] = g;
         });
@@ -168,8 +170,11 @@ function World (opts) {
         });
         guppy.selected = true;
         opts.well.html(contents).show();
-        $('<a>').addClass('btn btn-sm btn-warning pull-right').text('Dismiss')
-            .prependTo(opts.well).click(self.clearSelection);
+        var buttons = $('<div>').addClass('pull-right').prependTo(opts.well);
+        $('<a>').addClass('btn btn-sm btn-warning').text('Dismiss')
+            .appendTo(buttons).click(self.clearSelection).wrap($('<div>').css({textAlign: 'right'}));
+        $('<a>').addClass('btn btn-sm btn-info btn-test-net').text('Test')
+            .appendTo(buttons).wrap($('<div>').css({textAlign: 'right'})).data('net', guppy.net);
         self.stage.update();
     }
 
@@ -208,7 +213,7 @@ function World (opts) {
             ]
             if (parents[0] == parents[1])
                 continue;
-            var g = new Guppy(opts.hidden_layer_size);
+            var g = new Guppy(opts.hidden_layers, opts.hidden_layer_size);
             g.net.iter(function(lid, nid, layer, neuron) {
                 for (var i = 0; i < neuron.weights.length; i++) {
                     neuron.weights[i] = parents[randInt(0, 1)].net.layers[lid].neurons[nid].weights[i] || 0;
@@ -239,18 +244,26 @@ function World (opts) {
 
 $(function() {
     $('a#run').click(function() {
-        var opts = {
-            guppies: toFloat($('#num-guppies').val()),
-            max_speed: toFloat($('#max-speed').val()),
-            mutation_rate: toFloat($('#mutation-rate').val()),
-            hidden_layer_size: toFloat($('#hidden-layer-size').val()),
-            canvas: $('#default-canvas'),
-            well: $('.well').first(),
-            generation_ticks: toInt($('#gen-ticks').val()),
-            timer: $('#timer'),
-            food_counter: $('#food-count'),
-            generation_counter: $('#generation-id'),
-        };
+        var opts;
+        try {
+            opts = {
+                guppies: toFloat($('#num-guppies').val()),
+                max_speed: toFloat($('#max-speed').val()),
+                mutation_rate: toFloat($('#mutation-rate').val()),
+                hidden_layer_size: toFloat($('#hidden-layer-size').val()),
+                hidden_layers: toInt($('#num-hidden-layers').val()),
+                canvas: $('#default-canvas'),
+                well: $('.well').first(),
+                generation_ticks: toInt($('#gen-ticks').val()),
+                timer: $('#timer'),
+                food_counter: $('#food-count'),
+                generation_counter: $('#generation-id'),
+            };
+        }
+        catch (e) {
+            showMessageBox('Invalid input', e.message, 'danger');
+            return;
+        }
         if (!world)
             world = new World(opts);
         else
@@ -278,17 +291,7 @@ $(function() {
                 world.newgen();
             }
             catch (e) {
-                BootstrapDialog.show({
-                    type: BootstrapDialog.TYPE_DANGER,
-                    title: 'Error',
-                    message: e,
-                    buttons: [{
-                        label: "Close",
-                        action: function (dialog) {
-                            dialog.close();
-                        }
-                    }],
-                });
+                showMessageBox('Error', e.message, 'warning');
             }
         }
     });
@@ -316,5 +319,46 @@ $(function() {
             });
         }
         catch (e) {}
+    });
+    $('.well').on('click', '.btn-test-net', function() {
+        var net = $(this).data('net');
+        if (world && world.isRunning())
+            $('a#run').click();
+        var contents = $('<div>');
+        contents.append(
+            $('<h3>').text('Inputs:')
+        );
+        iter(net.layers[0].neurons.length, function() {
+            contents.append(makeDialogInput());
+        });
+        contents.append(
+            $('<h3>').text('Outputs:')
+        );
+        var outputs = $('<ul>').appendTo(contents);
+        BootstrapDialog.show({
+            type: BootstrapDialog.TYPE_INFO,
+            title: "Test network",
+            message: contents,
+            buttons: [
+                {
+                    label: "Close",
+                    action: function(d) { d.close() }
+                },
+                {
+                    cssClass: 'btn-primary',
+                    label: "Test",
+                    action: function() {
+                        var inputs = [];
+                        contents.find('input[type=text]').each(function (i, e) {
+                            inputs.push(toFloat($(e).val()));
+                        });
+                        outputs.html('');
+                        iter(net.calculate(inputs), function (i, out) {
+                            $('<li>').text(out).appendTo(outputs);
+                        });
+                    }
+                }
+            ]
+        });
     });
 });

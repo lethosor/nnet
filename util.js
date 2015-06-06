@@ -1,17 +1,17 @@
 function _toNum (handler, msg) {
-    return function (val, default_) {
-        val = handler(val);
+    return function (orig, default_) {
+        var val = handler(orig);
         if (isNaN(val)) {
             if (default_ === undefined)
-                throw new TypeError(msg || 'Number required');
+                throw new TypeError((msg || 'Invalid number') + ': "' + orig + '"');
             else
                 val = default_;
         }
         return val;
     }
 }
-toInt = _toNum(parseInt);
-toFloat = _toNum(parseFloat);
+toInt = _toNum(parseInt, 'Invalid integer');
+toFloat = _toNum(parseFloat, 'Invalid decimal');
 
 function randInt (a, b) {
     return Math.floor(Math.random() * (b - a + 1)) + a;
@@ -42,6 +42,28 @@ function iter (obj, cb) {
 
 function cloneArray (arr) {
     return [].slice.apply(arr);
+}
+
+function makeDialogInput(value) {
+    return $('<div>').addClass('row').append(
+        $('<span>').addClass('col-sm-12').append(
+            $('<input type="text">').addClass("form-control").val(value)
+        )
+    );
+}
+
+function showMessageBox(title, contents, type) {
+    BootstrapDialog.show({
+        type: 'type-' + (type || 'default'),
+        title: title,
+        message: contents,
+        buttons: [{
+            label: "Ok",
+            action: function (dialog) {
+                dialog.close();
+            }
+        }],
+    });
 }
 
 function Circle (x, y, r, fill) {

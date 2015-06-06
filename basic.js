@@ -29,14 +29,6 @@ function handleMouseEvent (evt, data) {
     }
 }
 
-function makeDialogInput(value) {
-    return $('<div>').addClass('row').append(
-        $('<span>').addClass('col-sm-12').append(
-            $('<input type="text">').addClass("form-control").val(value)
-        )
-    );
-}
-
 function createDialog (neuron) {
     if (neuron.is_input)
         return;
