@@ -35,3 +35,7 @@ div.row {
 span.game-info {
     margin: 0 0.5em;
 }
+
+canvas {
+    background-color: #004;
+}

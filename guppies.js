@@ -303,6 +303,9 @@ $(function() {
                 world.tick_delay = 50;
         }
     });
+    $('a#fullscreen').click(function() {
+        $('#default-canvas')[0].requestFullscreen();
+    });
     $('.well').hide().css({'max-height': 300, 'overflow': 'auto'});
     $('input#max-speed').on('keydown keyup', function() {
         try {
