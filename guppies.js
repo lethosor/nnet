@@ -20,6 +20,7 @@ function Guppy (hidden_layers, hidden_layer_size) {
     iter(hidden_layers, function() { dims.splice(1, 0, hidden_layer_size); });
     self.net = new nnet.Network(dims);
     self.shape = new createjs.Shape();
+    self.velocity = {x: 0, y: 0};
     self.getStrokeColor = function() {
         if (self.selected)
             return 'red';
@@ -140,12 +141,34 @@ function World (opts) {
                 guppy.levelUp();
                 self.newFoodPos();
             }
-            var velocity = guppy.net.calculate([guppy.shape.x - self.food.x, guppy.shape.y - self.food.y])
-                .map(function(n) {
-                    return n * opts.max_speed * 2 - opts.max_speed;
-                });
-            guppy.shape.x = Math.max(10, Math.min(cwidth - 10, guppy.shape.x + velocity[0]));
-            guppy.shape.y = Math.max(10, Math.min(cheight - 10, guppy.shape.y + velocity[1]));
+            switch (opts.control) {
+            case 'vel':
+            default:
+                var velocity = guppy.net.calculate([guppy.shape.x - self.food.x, guppy.shape.y - self.food.y])
+                    .map(function(n) {
+                        return n * opts.max_speed * 2 - opts.max_speed;
+                    });
+                guppy.velocity.x = velocity[0];
+                guppy.velocity.y = velocity[1];
+                break;
+            case 'accel':
+                var accel = guppy.net.calculate([guppy.shape.x - self.food.x, guppy.shape.y - self.food.y])
+                    .map(function(n) {
+                        return n - 0.5;
+                    });
+                guppy.velocity.x = Math.max(-opts.max_speed, Math.min(opts.max_speed, guppy.velocity.x + accel[0]));
+                guppy.velocity.y = Math.max(-opts.max_speed, Math.min(opts.max_speed, guppy.velocity.y + accel[1]));
+                break;
+            case 'polar-vel':
+                var raw = guppy.net.calculate([guppy.shape.x - self.food.x, guppy.shape.y - self.food.y]);
+                var speed = raw[0] * opts.max_speed * 2 - opts.max_speed;
+                var angle = raw[1] * Math.PI * 2;
+                guppy.velocity.x = speed * Math.cos(angle);
+                guppy.velocity.y = speed * Math.sin(angle);
+                break;
+            }
+            guppy.shape.x = Math.max(10, Math.min(cwidth - 10, guppy.shape.x + guppy.velocity.x));
+            guppy.shape.y = Math.max(10, Math.min(cheight - 10, guppy.shape.y + guppy.velocity.y));
         });
         self.stage.update();
     }
@@ -226,6 +249,7 @@ function World (opts) {
             self.guppies.push(g);
         }
         iter(self.guppies, function (i, g) {
+            g.velocity = {x: 0, y: 0};
             g.points = 0;
             g.updateColor();
             g.shape.set({x: cwidth / 2, y: cheight / 2});
@@ -258,6 +282,7 @@ $(function() {
                 timer: $('#timer'),
                 food_counter: $('#food-count'),
                 generation_counter: $('#generation-id'),
+                control: $('#control').val(),
             };
         }
         catch (e) {

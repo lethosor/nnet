@@ -28,6 +28,13 @@ id: guppies
             <div><label>Hidden layer size <input type="text" class="form-control" value="30" id="hidden-layer-size"></label></div>
             <div><label>Hidden layers <input type="text" class="form-control" value="1" id="num-hidden-layers"></label></div>
             <div><label>Generation ticks <input type="text" class="form-control" value="500" id="gen-ticks"></label></div>
+            <div><label>Control
+                <select class="form-control" id="control">
+                    <option value="vel">X & Y velocity</option>
+                    <option value="accel">X & Y acceleration</option>
+                    <option value="polar-vel">Speed & turn</option>
+                </select>
+            </label></div>
             <div class="well ws-pre">
             </div>
         </div>
